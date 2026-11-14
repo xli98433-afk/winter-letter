@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05070d">
+<title>Merry Christmas</title>
+<meta name="description" content="张开手掌，让圣诞树散开。">
+<meta property="og:title" content="Merry Christmas">
+<meta property="og:description" content="张开手掌，让圣诞树散开。">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎄</text></svg>">
+<link rel="preconnect" href="https://fastly.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fontsource/zhi-mang-xing@5.0.0/index.css">
+
+<style>
+  :root {
+    --gold: #f4d089;
+    --gold-soft: rgba(244, 208, 137, 0.6);
+    --ink: #f7f1e3;
+    --bg: #05070d;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+    --safe-t: env(safe-area-inset-top, 0px);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--bg); color: var(--ink);
+    font-family: Georgia, "Times New Roman", "Songti SC", "STSong", serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage { position: fixed; inset: 0; cursor: grab; }
+  #stage:active { cursor: grabbing; }
+  #stage canvas { display: block; }
+  .vignette {
+    position: fixed; inset: 0; pointer-events: none; z-index: 2;
+    background:
+      radial-gradient(120% 100% at 50% 45%, transparent 45%, rgba(0,0,0,0.65) 100%),
+      linear-gradient(180deg, rgba(0,0,0,0.45), transparent 22%, transparent 72%, rgba(0,0,0,0.55));
+  }
+  .topbar {
+    position: fixed; top: calc(18px + var(--safe-t)); left: 0; right: 0;
+    z-index: 4; display: flex; flex-direction: column; align-items: center;
+    pointer-events: none; text-align: center;
+  }
+  .topbar h1 {
+    margin: 0; font-weight: 400; font-size: clamp(17px, 4.4vw, 30px);
+    letter-spacing: 0.3em; text-indent: 0.3em; color: var(--gold);
+    text-shadow: 0 0 18px rgba(244,208,137,0.55), 0 0 60px rgba(244,208,137,0.25);
+    white-space: nowrap;
+  }
+  .add-btn {
+    margin-top: 12px; pointer-events: auto; cursor: pointer;
+    padding: 7px 16px; border: 1px solid var(--gold-soft); border-radius: 2px;
+    background: rgba(10,8,6,0.35); color: var(--gold);
+    font-family: inherit; font-size: 10px; letter-spacing: 0.26em;
+    text-transform: uppercase; transition: background 0.3s, box-shadow 0.3s, border-color 0.3s;
+  }
+  .add-btn:hover { background: rgba(244,208,137,0.14); box-shadow: 0 0 24px rgba(244,208,137,0.25); border-color: var(--gold); }
+  .hint {
+    position: fixed; left: 50%; bottom: calc(74px + var(--safe-b)); z-index: 4;
+    margin: 0; transform: translateX(-50%);
+    font-size: 10px; letter-spacing: 0.14em; white-space: nowrap;
+    color: rgba(247,241,227,0.42); text-shadow: 0 1px 8px rgba(0,0,0,0.8);
+    transition: opacity 0.4s;
+  }
+  .dock {
+    position: fixed; left: 16px; bottom: calc(18px + var(--safe-b)); z-index: 4;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+    font-family: ui-sans-serif, system-ui, "PingFang SC", sans-serif;
+  }
+  .chip {
+    cursor: pointer; padding: 9px 14px; border-radius: 999px;
+    border: 1px solid rgba(247,241,227,0.2); background: rgba(8,9,14,0.45);
+    color: rgba(247,241,227,0.85); font-family: inherit; font-size: 11px;
+    letter-spacing: 0.1em; backdrop-filter: blur(10px);
+    transition: border-color 0.25s, background 0.25s;
+  }
+  .chip:hover { border-color: var(--gold-soft); background: rgba(244,208,137,0.08); }
+  .chip.on { border-color: var(--gold); color: var(--gold); }
+  .cam-state {
+    font-size: 10px; letter-spacing: 0.08em; color: rgba(247,241,227,0.4);
+    max-width: 210px; line-height: 1.5;
+  }
+  .actions {
+    position: fixed; right: 14px; bottom: calc(18px + var(--safe-b)); z-index: 4;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+    border: 1px solid rgba(247,241,227,0.18); background: rgba(8,9,14,0.45);
+    color: var(--ink); font-size: 15px; display: grid; place-items: center;
+    backdrop-filter: blur(10px); transition: border-color 0.25s, background 0.25s, opacity 0.25s;
+  }
+  .icon-btn:hover { border-color: var(--gold-soft); background: rgba(244,208,137,0.1); }
+  .icon-btn.off { opacity: 0.45; }
+  #toast {
+    position: fixed; left: 50%; bottom: calc(126px + var(--safe-b)); z-index: 8;
+    transform: translate(-50%, 10px); opacity: 0; pointer-events: none;
+    padding: 10px 18px; border-radius: 999px; max-width: 84vw; text-align: center;
+    background: rgba(14,13,16,0.92); border: 1px solid rgba(247,241,227,0.14);
+    font-family: ui-sans-serif, system-ui, "PingFang SC", sans-serif;
+    font-size: 12px; letter-spacing: 0.06em; transition: opacity 0.3s, transform 0.3s;
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  #loader {
+    position: fixed; inset: 0; z-index: 9; display: grid; place-items: center; gap: 18px;
+    background: radial-gradient(80% 70% at 50% 40%, #0b0d16, #04050a 75%);
+    transition: opacity 0.8s, visibility 0.8s;
+  }
+  #loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+  .spinner {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid rgba(244,208,137,0.2); border-top-color: var(--gold);
+    animation: spin 1.1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loader p {
+    margin: 0; font-size: 11px; letter-spacing: 0.32em; text-indent: 0.32em;
+    color: var(--gold-soft);
+  }
+  #shotModal {
+    position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; gap: 14px;
+    background: rgba(2,2,5,0.92); backdrop-filter: blur(6px); padding: 24px;
+  }
+  #shotModal.hidden { display: none; }
+  #shotModal img {
+    max-width: min(92vw, 520px); max-height: 66vh; border-radius: 8px;
+    box-shadow: 0 20px 80px rgba(0,0,0,0.75);
+  }
+  #shotModal p {
+    margin: 0; font-size: 12px; letter-spacing: 0.16em;
+    color: rgba(247,241,227,0.7);
+    font-family: ui-sans-serif, system-ui, "PingFang SC", sans-serif;
+  }
+  .pill {
+    cursor: pointer; padding: 9px 20px; border-radius: 999px;
+    border: 1px solid rgba(247,241,227,0.2); background: rgba(255,255,255,0.05);
+    color: var(--ink); font-family: ui-sans-serif, system-ui, "PingFang SC", sans-serif;
+    font-size: 12px; letter-spacing: 0.14em;
+  }
+  .pill:hover { border-color: var(--gold-soft); }
+  @media (max-width: 520px) {
+    .topbar h1 { letter-spacing: 0.2em; text-indent: 0.2em; }
+    .hint { font-size: 9px; padding: 0 18px; }
+    .dock { left: 12px; bottom: calc(14px + var(--safe-b)); }
+    .actions { right: 12px; bottom: calc(14px + var(--safe-b)); }
+    .icon-btn { width: 36px; height: 36px; font-size: 13px; }
+    .cam-state { max-width: 160px; }
+  }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div class="vignette"></div>
+
+<header class="topbar">
+  <h1>MERRY CHRISTMAS</h1>
+  <button id="addBtn" class="add-btn">Add Memories</button>
+  <p id="hint" class="hint">张开手掌散开 · 握拳收回 · 捏合放大</p>
+</header>
+
+<div class="dock">
+  <button id="camBtn" class="chip">启用摄像头手势</button>
+  <span id="camState" class="cam-state"></span>
+</div>
+
+<div class="actions">
+  <button id="soundBtn" class="icon-btn off" title="音乐">♪</button>
+  <button id="saveBtn" class="icon-btn" title="保存画面">⌾</button>
+  <button id="shareBtn" class="icon-btn" title="分享">↗</button>
+</div>
+
+<div id="toast"></div>
+<input id="fileInput" type="file" accept="image/*" multiple hidden>
+
+<div id="loader">
+  <div class="spinner"></div>
+  <p>正在点亮圣诞树</p>
+</div>
+
+<div id="shotModal" class="hidden">
+  <img id="shotImg" alt="这一刻">
+  <p>长按图片保存</p>
+  <button id="closeShot" class="pill">关闭</button>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./lib/three.module.js",
+    "three/addons/": "./lib/jsm/"
+  }
+}
+</script>
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>
